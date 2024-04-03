@@ -1,6 +1,6 @@
-# libs
-
+# my ignore
 data/
+.python-version
 
 
 # Byte-compiled / optimized / DLL files

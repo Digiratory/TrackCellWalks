@@ -1,0 +1,10 @@
+[project]
+name = 'TrackCellWalks'
+version = '0.1.0'
+readme = "README.md"
+
+[tool.setuptools]
+packages = ['utils']
+
+[tool.setuptools.package-dir]
+'utils' = 'research/utils'

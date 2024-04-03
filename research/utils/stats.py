@@ -1,8 +1,19 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
+from matplotlib.animation import FFMpegWriter
+from tqdm import tqdm
 
 def plot_entire_stat_tresh(shape, vs_np, us_np, title="Sequence image sample", thresh = 0.95):
+    """
+    Функция для построения графика оптического потока и векторного поля.
+
+    :param shape: tuple, форма изображения (высота, ширина).
+    :param vs_np: np.array, массив вертикальных компонент оптического потока.
+    :param us_np: np.array, массив горизонтальных компонент оптического потока.
+    :param title: str, заголовок графика (по умолчанию "Sequence image sample").
+    :param thresh: float, порог для определения среднего значения оптического потока (по умолчанию 0.95).
+    """
     v_mean = vs_np.mean(axis=0, where=vs_np>np.quantile(vs_np, thresh))# y direction    
     u_mean = us_np.mean(axis=0, where=us_np>np.quantile(us_np, thresh))# x direction    
     # --- Compute flow magnitude
@@ -94,3 +105,38 @@ def analyze_hs(hs, S, plot=True, title="H(S)"):
         plt.grid(which='both')
         plt.plot()
     return cross, res_l.slope, res_h.slope
+
+def make_animation(vs_np, us_np, output):
+    nl, nc = vs_np.shape[1:]
+    nvec = 25  # Number of vectors to be displayed along each image dimension
+    step = max(nl//nvec, nc//nvec)
+
+    low_perc = 0.1
+    hig_perc = 0.9
+    v_05 = np.quantile(vs_np, low_perc)# y direction    
+    v_95 = np.quantile(vs_np, hig_perc)# y direction    
+    u_05 = np.quantile(us_np, low_perc)# x direction
+    u_95 = np.quantile(us_np, hig_perc)# x direction
+    # --- Compute flow magnitude
+    magn_05 = np.sqrt(v_05 ** 2 + u_05 ** 2)
+    magn_95 = np.sqrt(v_95 ** 2 + u_95 ** 2)
+
+    
+    plt.style.use("ggplot")
+    fig = plt.figure(figsize=(10,15))
+    plt.axis('off')
+    writervideo = FFMpegWriter(fps=10) 
+    with writervideo.saving(fig, output, 100):
+        for v_np, u_np in tqdm(zip(vs_np, us_np)):
+            fig.clf()
+            # --- Display
+            # --- Quiver plot arguments
+            y, x = np.mgrid[:nl:step, :nc:step]
+            u_ = u_np[::step, ::step]
+            v_ = v_np[::step, ::step]
+
+            norm = np.sqrt(v_np ** 2 + u_np ** 2)
+            fig.gca().imshow(norm, vmin=magn_05, vmax=magn_95, cmap="jet")
+            fig.gca().quiver(x, y, u_, v_, color='r', units='dots',
+                    angles='xy', scale_units='xy', lw=3)
+            writervideo.grab_frame()
