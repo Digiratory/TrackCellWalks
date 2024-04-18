@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from scipy import stats
 from matplotlib.animation import FFMpegWriter
 from tqdm import tqdm
+import math
 
 def plot_entire_stat_tresh(shape, vs_np, us_np, title="Sequence image sample", thresh = 0.95):
     """
@@ -140,3 +141,20 @@ def make_animation(vs_np, us_np, output):
             fig.gca().quiver(x, y, u_, v_, color='r', units='dots',
                     angles='xy', scale_units='xy', lw=3)
             writervideo.grab_frame()
+
+def compute_temporal_scales(base: float, smin: float, smax: float) -> list[int]:
+    """
+    Функция вычисляет временные масштабы для анализа многомерных временных рядов с использованием алгоритма DCCA.
+
+    :param base: float, база логарифма.
+    :param smin: int, минимальный размер временного масштаба.
+    :param smax: int, максимальный размер временного масштаба.
+    :return: список временных масштабов.
+    """
+
+    temporal_scales = []
+    for degree in range(int(math.log2(smin)/math.log2(base)), int(math.log2(smax)/math.log2(base))):
+        new = int(base**degree)
+        if new not in temporal_scales:
+            temporal_scales.append(new)
+    return temporal_scales
