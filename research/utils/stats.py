@@ -66,7 +66,7 @@ def plot_entire_stat_mask(shape, vs_np, us_np, mask, title="Sequence image sampl
 
     plt.show()
     
-def analyze_hs(hs, S, plot=True, title="H(S)"):
+def analyze_hs(hs, S, output_file, plot=True, title="H(S)"):
     errs = []
     for cp in range(4, len(S)-4):
         res1 = stats.linregress(np.log10(S[cp:]), np.log10(hs[cp:]))
@@ -76,6 +76,13 @@ def analyze_hs(hs, S, plot=True, title="H(S)"):
     cross = np.argmin(np.array(errs)) + 4
     res_l = stats.linregress(np.log10(S[:cross]), np.log10(hs[:cross]))
     res_h = stats.linregress(np.log10(S[cross:]), np.log10(hs[cross:]))
+    
+    with open(output_file, 'w') as f:
+        f.write("Time Scale,Fluctuation\n")
+        for t, e in zip(S, errs):
+            print(t,e)
+            f.write(f"{t},{e}\n")
+
     if plot:
         n_sigm = 3
         print(f"Opt S = {S[cross]}; H_l(S) = {res_l.slope}; H_h(S) = {res_h.slope}")

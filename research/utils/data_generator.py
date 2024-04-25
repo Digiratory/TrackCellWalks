@@ -6,21 +6,24 @@ import slideio
 import numpy as np
 
 
-def bacterial_ds_generator(video_folder, cache_folder, output_folder):
+def bacterial_ds_generator(input_dir, cache_dir, output_dir):
     """
-    Генератор для создания путей к видеофайлам и их файлам кэша.
+    Генератор для создания путей к видеофайлам, файлам кэша и анимациям.
 
-    :param video_folder: str, путь к папке с видеофайлами.
-    :param cache_folder: str, путь к папке, где будут храниться файлы кэша.
+    :param input_dir: str, путь к папке с видеофайлами.
+    :param cache_dir: str, путь к папке, где будут храниться файлы кэша.
+    :param output_dir: str, путь к папке, где будут храниться файлы анимаций.
     :return: tuple, кортеж из двух строк, представляющих путь к видеофайлу и путь к файлу кэша.
     """
 
-    videos = glob(os.path.join(video_folder, f"*.avi"))
-    for video in videos:
-        video_name, _ = os.path.splitext(video)
-        cache_path = os.path.join(cache_folder, video_name+".npz")
-        output_path = os.path.join(output_folder, video_name+".mp4")
-        yield video, cache_path, output_path 
+    videos = glob(os.path.join(input_dir, f"*.avi"))
+    for input_file in videos:
+        path_file, _ = os.path.splitext(input_file)
+        file_name = os.path.basename(path_file) 
+        cache_file = os.path.join(cache_dir, file_name+".npz")
+        output_file = os.path.join(output_dir, file_name+".mp4")
+        fluctuation_file = os.path.join(output_dir, file_name+".csv")
+        yield input_file, cache_file, output_file, fluctuation_file
 
 def zvi_based_frame_generator(video_path, start_frame=0, step=1, blur_sigma=None, frame_count=np.iinfo(int).max):
     """

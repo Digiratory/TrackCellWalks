@@ -5,12 +5,16 @@ import sys
 
 from tqdm.notebook import tqdm
 import os
+import json
 
 sys.path.append('..')
 from utils.data_generator import zvi_based_frame_generator
 from utils.data_generator import video_based_frame_generator
 
-RECORD_DURATION = 100
+with open('params.json') as f:
+        params = json.load(f)
+
+RECORD_DURATION = params['record_duration']
 
 def frame_generator(video_path:str, start_frame=0, step=1, blur_sigma=None, frame_count=np.iinfo(int).max):
     """
@@ -55,7 +59,7 @@ def compute_optical_flow(generator, radius=None, gen_length=None):
             us.append(u)
     return np.array(vs), np.array(us)
 
-def get_vid_opt_flow(video_path, cache_path, start_frame=0, step=1):
+def get_vid_opt_flow(input_file, cache_file, start_frame=0, step=1):
     """
     Функция получает оптический поток из видеофайла или кэша.
 
@@ -66,16 +70,16 @@ def get_vid_opt_flow(video_path, cache_path, start_frame=0, step=1):
     :return: tuple, компоненты оптического потока: vs (вертикальная компонента) и us (горизонтальная компонента).
     """
 
-    if not os.path.exists(cache_path):
-        vs_np, us_np = compute_optical_flow(frame_generator(video_path, blur_sigma=1, start_frame=start_frame, step=step, frame_count=RECORD_DURATION)) # 3 sec for performance
-        np.savez(cache_path, vs=vs_np, us=us_np)
+    if not os.path.exists(cache_file):
+        vs_np, us_np = compute_optical_flow(frame_generator(input_file, 
+                                                            blur_sigma=1, 
+                                                            start_frame=start_frame, 
+                                                            step=step, 
+                                                            frame_count=RECORD_DURATION)
+                                            ) # 3 sec for performance
+        np.savez(cache_file, vs=vs_np, us=us_np)
     else:
-        with np.load(cache_path) as npzfile:
+        with np.load(cache_file) as npzfile:
             vs_np = npzfile["vs"]
             us_np = npzfile["us"]
     return vs_np, us_np
-
-
-
-
-
