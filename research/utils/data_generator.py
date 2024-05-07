@@ -43,6 +43,7 @@ def zvi_based_frame_generator(video_path, start_frame=0, step=1, blur_sigma=None
         i = frame_i % scene.num_t_frames
         yield scene.read_block(rect=(0,0,0,0), size=(0,0), channel_indices=[0], slices=(0,1), frames=(i,i+1))
 
+
 def video_based_frame_generator(video_path, start_frame=0, step=1, blur_sigma=None, frame_count=np.iinfo(int).max):
     """
     Функция генерирует кадры видео из файлового источника.
@@ -62,6 +63,7 @@ def video_based_frame_generator(video_path, start_frame=0, step=1, blur_sigma=No
     
     count = start_frame
     cap.set(cv2.CAP_PROP_POS_FRAMES, count)
+
     while True:
         ret, frame = cap.read()
         if not ret or count>= frame_count:
@@ -76,3 +78,19 @@ def video_based_frame_generator(video_path, start_frame=0, step=1, blur_sigma=No
         cap.set(cv2.CAP_PROP_POS_FRAMES, count)
         yield grey_np
     cap.release()
+
+def frame_generator(video_path:str, start_frame=0, step=1, blur_sigma=None, frame_count=np.iinfo(int).max):
+    """
+    Функция определяет тип видеофайла и вызывает соответствующий генератор кадров.
+
+    :param video_path: str, путь к видеофайлу.
+    :param start_frame: int, опциональный параметр, номер первого кадра для чтения.
+    :param step: int, опциональный параметр, шаг между кадрами для чтения.
+    :param blur_sigma: float, опциональный параметр, стандартное отклонение для размытия изображения (если требуется).
+    :param frame_count: int, опциональный параметр, максимальное количество кадров для чтения.
+    :return: generator, генератор кадров из видео.
+    """
+    if video_path.endswith("zvi"):
+        return zvi_based_frame_generator(video_path, start_frame, step, blur_sigma, frame_count)
+    else:
+        return video_based_frame_generator(video_path, start_frame, step, blur_sigma, frame_count)

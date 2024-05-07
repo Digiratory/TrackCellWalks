@@ -15,6 +15,7 @@ def plot_entire_stat_tresh(shape, vs_np, us_np, title="Sequence image sample", t
     :param title: str, заголовок графика (по умолчанию "Sequence image sample").
     :param thresh: float, порог для определения среднего значения оптического потока (по умолчанию 0.95).
     """
+    
     v_mean = vs_np.mean(axis=0, where=vs_np>np.quantile(vs_np, thresh))# y direction    
     u_mean = us_np.mean(axis=0, where=us_np>np.quantile(us_np, thresh))# x direction    
     # --- Compute flow magnitude
@@ -67,6 +68,20 @@ def plot_entire_stat_mask(shape, vs_np, us_np, mask, title="Sequence image sampl
     plt.show()
     
 def analyze_hs(hs, S, output_file, plot=True, title="H(S)"):
+    """
+    Функция для анализа масштабирования флуктуаций сигнала.
+    
+    :param hs: массив, содержащий значения флуктуаций.
+    :param S: массив, содержащий соответствующие временные масштабы.
+    :param output_file: str, путь к файлу для сохранения результатов анализа.
+    :param plot: bool, опционально: генерировать и отображать график (по умолчанию True).
+    :param title: str, опционально: заголовок графика (по умолчанию "H(S)").
+
+    :return: tuple, кортеж, содержащий индекс перекреста, наклон низкочастотного режима масштабирования и 
+            наклон высокочастотного режима масштабирования.
+
+    """
+    
     errs = []
     for cp in range(4, len(S)-4):
         res1 = stats.linregress(np.log10(S[cp:]), np.log10(hs[cp:]))
@@ -80,7 +95,6 @@ def analyze_hs(hs, S, output_file, plot=True, title="H(S)"):
     with open(output_file, 'w') as f:
         f.write("Time Scale,Fluctuation\n")
         for t, e in zip(S, errs):
-            print(t,e)
             f.write(f"{t},{e}\n")
 
     if plot:

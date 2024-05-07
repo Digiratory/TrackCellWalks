@@ -1,37 +1,21 @@
 import numpy as np
 from IPython.display import clear_output
-from skimage.registration import optical_flow_tvl1
+from skimage.registration import optical_flow_tvl1, optical_flow_ilk
+from cv2 import calcOpticalFlowFarneback
 import sys
+import pdb
 
 from tqdm.notebook import tqdm
 import os
 import json
 
 sys.path.append('..')
-from utils.data_generator import zvi_based_frame_generator
-from utils.data_generator import video_based_frame_generator
+from utils.data_generator import frame_generator
 
 with open('params.json') as f:
         params = json.load(f)
 
 RECORD_DURATION = params['record_duration']
-
-def frame_generator(video_path:str, start_frame=0, step=1, blur_sigma=None, frame_count=np.iinfo(int).max):
-    """
-    Функция определяет тип видеофайла и вызывает соответствующий генератор кадров.
-
-    :param video_path: str, путь к видеофайлу.
-    :param start_frame: int, опциональный параметр, номер первого кадра для чтения.
-    :param step: int, опциональный параметр, шаг между кадрами для чтения.
-    :param blur_sigma: float, опциональный параметр, стандартное отклонение для размытия изображения (если требуется).
-    :param frame_count: int, опциональный параметр, максимальное количество кадров для чтения.
-    :return: generator, генератор кадров из видео.
-    """
-    if video_path.endswith("zvi"):
-        return zvi_based_frame_generator(video_path, start_frame, step, blur_sigma, frame_count)
-    else:
-        return video_based_frame_generator(video_path, start_frame, step, blur_sigma, frame_count)
-
 
 def compute_optical_flow(generator, radius=None, gen_length=None):
     """
@@ -53,8 +37,19 @@ def compute_optical_flow(generator, radius=None, gen_length=None):
         else:
             # --- Compute the optical flow
             image1 = frame_blur
-            v, u = optical_flow_tvl1(image0, image1)
-            image0 = image1.copy()
+        
+            flow = calcOpticalFlowFarneback(prev=image0, 
+                                            next=image1,
+                                            flow=None,
+                                            pyr_scale=0.5,
+                                            levels=1,
+                                            winsize=15,
+                                            iterations=3,
+                                            poly_n=5,
+                                            poly_sigma=1.2,
+                                            flags=0)
+            v, u = flow[..., 1], flow[..., 0]
+            
             vs.append(v)
             us.append(u)
     return np.array(vs), np.array(us)
@@ -75,8 +70,8 @@ def get_vid_opt_flow(input_file, cache_file, start_frame=0, step=1):
                                                             blur_sigma=1, 
                                                             start_frame=start_frame, 
                                                             step=step, 
-                                                            frame_count=RECORD_DURATION)
-                                            ) # 3 sec for performance
+                                                            frame_count=RECORD_DURATION),
+                                            gen_length=RECORD_DURATION)
         np.savez(cache_file, vs=vs_np, us=us_np)
     else:
         with np.load(cache_file) as npzfile:

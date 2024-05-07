@@ -70,7 +70,7 @@ if __name__ == '__main__':
         input_file = os.path.abspath(params['input'])
         path_file, ext = os.path.splitext(input_file)
         file_name = os.path.basename(path_file) 
-        file_types = ['.avi']
+        file_types = ['.avi', '.mp4']
         if ext not in file_types:
             print('The video format is incorrect. Supported:', *file_types)
             sys.exit()

@@ -1,8 +1,1 @@
-{
-    "input": "../../data/bacterial_video/vid_2.avi",
-    "output_animation": null,
-    "output_fluctuation_characteristic_file": null,
-    "record_duration": 100,
-    "base": 1.1,
-    "smin": 8
-}
+{"input": "/Volumes/Z Slim/work/TrackCellWalks/data/bacterial_video/vid_3.mp4", "output_animation": null, "output_fluctuation_characteristic_file": null, "record_duration": 100, "base": 1.1, "smin": 8}
