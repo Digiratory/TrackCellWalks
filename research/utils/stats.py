@@ -1,8 +1,21 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
+from matplotlib.animation import FFMpegWriter
+from tqdm import tqdm
+import math
 
 def plot_entire_stat_tresh(shape, vs_np, us_np, title="Sequence image sample", thresh = 0.95):
+    """
+    Функция для построения графика оптического потока и векторного поля.
+
+    :param shape: tuple, форма изображения (высота, ширина).
+    :param vs_np: np.array, массив вертикальных компонент оптического потока.
+    :param us_np: np.array, массив горизонтальных компонент оптического потока.
+    :param title: str, заголовок графика (по умолчанию "Sequence image sample").
+    :param thresh: float, порог для определения среднего значения оптического потока (по умолчанию 0.95).
+    """
+    
     v_mean = vs_np.mean(axis=0, where=vs_np>np.quantile(vs_np, thresh))# y direction    
     u_mean = us_np.mean(axis=0, where=us_np>np.quantile(us_np, thresh))# x direction    
     # --- Compute flow magnitude
@@ -54,7 +67,21 @@ def plot_entire_stat_mask(shape, vs_np, us_np, mask, title="Sequence image sampl
 
     plt.show()
     
-def analyze_hs(hs, S, plot=True, title="H(S)"):
+def analyze_hs(hs, S, output_file, plot=True, title="H(S)"):
+    """
+    Функция для анализа масштабирования флуктуаций сигнала.
+    
+    :param hs: массив, содержащий значения флуктуаций.
+    :param S: массив, содержащий соответствующие временные масштабы.
+    :param output_file: str, путь к файлу для сохранения результатов анализа.
+    :param plot: bool, опционально: генерировать и отображать график (по умолчанию True).
+    :param title: str, опционально: заголовок графика (по умолчанию "H(S)").
+
+    :return: tuple, кортеж, содержащий индекс перекреста, наклон низкочастотного режима масштабирования и 
+            наклон высокочастотного режима масштабирования.
+
+    """
+    
     errs = []
     for cp in range(4, len(S)-4):
         res1 = stats.linregress(np.log10(S[cp:]), np.log10(hs[cp:]))
@@ -64,6 +91,12 @@ def analyze_hs(hs, S, plot=True, title="H(S)"):
     cross = np.argmin(np.array(errs)) + 4
     res_l = stats.linregress(np.log10(S[:cross]), np.log10(hs[:cross]))
     res_h = stats.linregress(np.log10(S[cross:]), np.log10(hs[cross:]))
+    
+    with open(output_file, 'w') as f:
+        f.write("Time Scale,Fluctuation\n")
+        for t, e in zip(S, errs):
+            f.write(f"{t},{e}\n")
+
     if plot:
         n_sigm = 3
         print(f"Opt S = {S[cross]}; H_l(S) = {res_l.slope}; H_h(S) = {res_h.slope}")
@@ -94,3 +127,55 @@ def analyze_hs(hs, S, plot=True, title="H(S)"):
         plt.grid(which='both')
         plt.plot()
     return cross, res_l.slope, res_h.slope
+
+def make_animation(vs_np, us_np, output):
+    nl, nc = vs_np.shape[1:]
+    nvec = 25  # Number of vectors to be displayed along each image dimension
+    step = max(nl//nvec, nc//nvec)
+
+    low_perc = 0.1
+    hig_perc = 0.9
+    v_05 = np.quantile(vs_np, low_perc)# y direction    
+    v_95 = np.quantile(vs_np, hig_perc)# y direction    
+    u_05 = np.quantile(us_np, low_perc)# x direction
+    u_95 = np.quantile(us_np, hig_perc)# x direction
+    # --- Compute flow magnitude
+    magn_05 = np.sqrt(v_05 ** 2 + u_05 ** 2)
+    magn_95 = np.sqrt(v_95 ** 2 + u_95 ** 2)
+
+    
+    plt.style.use("ggplot")
+    fig = plt.figure(figsize=(10,15))
+    plt.axis('off')
+    writervideo = FFMpegWriter(fps=10) 
+    with writervideo.saving(fig, output, 100):
+        for v_np, u_np in tqdm(zip(vs_np, us_np)):
+            fig.clf()
+            # --- Display
+            # --- Quiver plot arguments
+            y, x = np.mgrid[:nl:step, :nc:step]
+            u_ = u_np[::step, ::step]
+            v_ = v_np[::step, ::step]
+
+            norm = np.sqrt(v_np ** 2 + u_np ** 2)
+            fig.gca().imshow(norm, vmin=magn_05, vmax=magn_95, cmap="jet")
+            fig.gca().quiver(x, y, u_, v_, color='r', units='dots',
+                    angles='xy', scale_units='xy', lw=3)
+            writervideo.grab_frame()
+
+def compute_temporal_scales(base: float, smin: float, smax: float) -> list[int]:
+    """
+    Функция вычисляет временные масштабы для анализа многомерных временных рядов с использованием алгоритма DCCA.
+
+    :param base: float, база логарифма.
+    :param smin: int, минимальный размер временного масштаба.
+    :param smax: int, максимальный размер временного масштаба.
+    :return: список временных масштабов.
+    """
+
+    temporal_scales = []
+    for degree in range(int(math.log2(smin)/math.log2(base)), int(math.log2(smax)/math.log2(base))):
+        new = int(base**degree)
+        if new not in temporal_scales:
+            temporal_scales.append(new)
+    return temporal_scales

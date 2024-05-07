@@ -1,5 +1,7 @@
 {
     "python.analysis.extraPaths": [
         "/Volumes/Z Slim/work/TrackCellWalks",
-    ]
+    ],
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.autoImportCompletions": false
 }
