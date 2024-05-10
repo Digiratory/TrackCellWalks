@@ -15,34 +15,58 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.
 from utils.optical_flow import get_vid_opt_flow
 from utils.stats import plot_entire_stat_tresh, analyze_hs, make_animation, compute_temporal_scales
 from utils.data_generator import bacterial_ds_generator
+from utils.edges_flow import get_vid_edges_flow
 
 def video_process(input_file: str, 
-                  cache_file: str, 
+                  cache_file: str,
+                  cache_edges: str, 
                   output_animation_file: str, 
                   output_fluctuation_file: str, 
                   temporal_scales: list):
-    """Функция обработки видео. 
-    - Вычисление оптического потока
-    - Построение графиков
-    - Выполнение анализа 
-    - Сохранение анимации
-    
-    :param input_file: путь до видео
-    :param cache_file: путь до кэша видео
-    :param output_file_animation: путь сохранения анимации видео
-    :param output_fluctuation_file: путь сохранения файла с флуктационной характеристикой
     """
+    Функция обработки видео. 
     
+    Args:
+        input_file (str): Путь до видео.
+        cache_file (str): Путь до кэша видео.
+        cache_edges (str): Путь до кэша границ.
+        output_file_animation (str): Путь сохранения анимации видео.
+        output_fluctuation_file (str): Путь сохранения файла с флуктационной характеристикой.
+        temporal_scales (list[int]): Список временных масштабов.
+    """
+
     vs_np, us_np = get_vid_opt_flow(input_file, cache_file)
+    edges = get_vid_edges_flow(input_file, cache_edges, win_size=50, win_step=25)[1:]
+    
+    mask = edges > np.quantile(edges, 0.3)
+
     vector_field = vs_np + 1j * us_np
+    vector_field_std = np.diff(np.var(vector_field, axis=(1,2)))
+
+    std_ = np.std(vector_field_std)
+    mean_ = np.mean(vector_field_std)
+
+    candidate_top = np.argwhere(vector_field_std> mean_ + 2*std_).flatten()
+    candidate_bottom = np.argwhere(vector_field_std < mean_ - 2*std_).flatten()
+
+    to_remove = set(candidate_top+1) & set(candidate_bottom)
+
+    vector_field = np.delete(vector_field, list(to_remove), 0)
+    mask = np.delete(mask, list(to_remove), 0)
+
+    vector_field_std = np.diff(np.var(vector_field, axis=(1,2)))
+
+    std_ = np.std(vector_field_std)
+    mean_ = np.mean(vector_field_std)
+
+    vector_field[np.invert(mask)] =  np.nan
 
     plot_entire_stat_tresh((vs_np.shape[1],vs_np.shape[2]), vs_np, us_np, thresh=0.5)
     
-    vector_field = vs_np + 1j * us_np
     compl_vars_ = []
     for w_size in tqdm(temporal_scales):
         window = sliding_window_view(vector_field, w_size, axis=0)[::w_size//4, ...]
-        H = np.std(np.sum(window, axis=-1))
+        H = np.nanstd(np.sum(window, axis=-1))
         compl_vars_.append(H)
     
     
@@ -99,23 +123,26 @@ if __name__ == '__main__':
     temporal_scales = compute_temporal_scales(base, smin, smax)
 
     if input_type_bool:
-        print('Start video processing', file_name)
         cache_file = cache_path + file_name + '.npz'
+        cache_edges = cache_path + file_name + "_edges" + '.npz'
         video_process(input_file=input_file, 
+                      cache_edges=cache_edges,
                       cache_file=cache_file, 
                       output_animation_file=output_animation_file, 
                       output_fluctuation_file=output_fluctuation_file, 
                       temporal_scales=temporal_scales)
     else: 
-        print('Start dir processing')
-        for input_file, \
-            cache_file, \
-            output_animation_file, \
-            output_fluctuation_file in bacterial_ds_generator(input_dir=input_dir, 
-                                                              cache_dir=cache_path, 
-                                                              output_dir=output_path):
+        for ((input_file, cache_file, output_animation_file, output_fluctuation_file), 
+             (input_file_edges, cache_edges)) in zip(bacterial_ds_generator(input_dir=input_dir, 
+                                                                                 cache_dir=cache_path, 
+                                                                                 output_dir=output_path),
+                                                          bacterial_ds_generator(input_dir=input_dir, 
+                                                                                 cache_dir=cache_path, 
+                                                                                 output_dir=output_path, 
+                                                                                 cache_suffix="_edges")):
             video_process(input_file=input_file,
                           cache_file=cache_file, 
+                          cache_edges= cache_edges,
                           output_animation_file=output_animation_file, 
                           output_fluctuation_file= output_fluctuation_file,
                           temporal_scales=temporal_scales)

@@ -1,6 +1,7 @@
 import numpy as np
 from IPython.display import clear_output
 from skimage.registration import optical_flow_tvl1, optical_flow_ilk
+import cv2
 from cv2 import calcOpticalFlowFarneback
 import sys
 import pdb
@@ -11,6 +12,7 @@ import json
 
 sys.path.append('..')
 from utils.data_generator import frame_generator
+
 
 with open('params.json') as f:
         params = json.load(f)
@@ -48,7 +50,8 @@ def compute_optical_flow(generator, radius=None, gen_length=None):
                                             poly_n=5,
                                             poly_sigma=1.2,
                                             flags=0)
-            v, u = flow[..., 1], flow[..., 0]
+            u = cv2.normalize(flow[...,1], None, 0, 255, cv2.NORM_MINMAX)
+            v = cv2.normalize(flow[...,0], None, 0, 255, cv2.NORM_MINMAX)
             
             vs.append(v)
             us.append(u)

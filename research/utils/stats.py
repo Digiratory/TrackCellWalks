@@ -5,15 +5,20 @@ from matplotlib.animation import FFMpegWriter
 from tqdm import tqdm
 import math
 
-def plot_entire_stat_tresh(shape, vs_np, us_np, title="Sequence image sample", thresh = 0.95):
+def plot_entire_stat_tresh(shape: tuple, 
+                           vs_np: np.array, 
+                           us_np: np.array, 
+                           title: str = "Sequence image sample", 
+                           thresh: float = 0.95):
     """
-    Функция для построения графика оптического потока и векторного поля.
+    Построение графика оптического потока и векторного поля.
 
-    :param shape: tuple, форма изображения (высота, ширина).
-    :param vs_np: np.array, массив вертикальных компонент оптического потока.
-    :param us_np: np.array, массив горизонтальных компонент оптического потока.
-    :param title: str, заголовок графика (по умолчанию "Sequence image sample").
-    :param thresh: float, порог для определения среднего значения оптического потока (по умолчанию 0.95).
+    Args:
+        shape (tuple): Форма изображения (высота, ширина).
+        vs_np (np.array): Массив вертикальных компонент оптического потока.
+        us_np (np.array): Массив горизонтальных компонент оптического потока.
+        title (str, optional): Заголовок графика. По умолчанию "Sequence image sample".
+        thresh (float, optional): Порог для определения среднего значения оптического потока. Defaults to 0.95.
     """
     
     v_mean = vs_np.mean(axis=0, where=vs_np>np.quantile(vs_np, thresh))# y direction    
@@ -41,7 +46,21 @@ def plot_entire_stat_tresh(shape, vs_np, us_np, title="Sequence image sample", t
 
     plt.show()
     
-def plot_entire_stat_mask(shape, vs_np, us_np, mask, title="Sequence image sample"):
+def plot_entire_stat_mask(shape: tuple, 
+                          vs_np: np.array, 
+                          us_np: np.array, 
+                          mask: np.array, 
+                          title: str = "Sequence image sample"):
+    """
+    Построение графика оптического потока и векторного поля с учетом маски.
+
+    Args:
+        shape (tuple): Форма изображения (высота, ширина).
+        vs_np (np.array): Массив вертикальных компонент оптического потока.
+        us_np (np.array): Массив горизонтальных компонент оптического потока.
+        mask (np.array): Маска для учета оптического потока.
+        title (str, optional): Заголовок графика. Defaults to "Sequence image sample".
+    """
     v_mean = vs_np.mean(axis=0, where=mask)# y direction    
     u_mean = us_np.mean(axis=0, where=mask)# x direction    
     # --- Compute flow magnitude
@@ -67,18 +86,20 @@ def plot_entire_stat_mask(shape, vs_np, us_np, mask, title="Sequence image sampl
 
     plt.show()
     
-def analyze_hs(hs, S, output_file, plot=True, title="H(S)"):
+def analyze_hs(hs, S, output_file, plot=True, title="H(S)") -> tuple:
     """
     Функция для анализа масштабирования флуктуаций сигнала.
-    
-    :param hs: массив, содержащий значения флуктуаций.
-    :param S: массив, содержащий соответствующие временные масштабы.
-    :param output_file: str, путь к файлу для сохранения результатов анализа.
-    :param plot: bool, опционально: генерировать и отображать график (по умолчанию True).
-    :param title: str, опционально: заголовок графика (по умолчанию "H(S)").
 
-    :return: tuple, кортеж, содержащий индекс перекреста, наклон низкочастотного режима масштабирования и 
-            наклон высокочастотного режима масштабирования.
+    Args:
+        hs (list): Массив значений флуктуации.
+        S (list[int]): Массив временных масштабов.
+        output_file (str): Путь файла с результатами анализа.
+        plot (bool, optional): Генерировать и отображать график. Defaults to True.
+        title (str, optional): Заголовок графика. Defaults to "H(S)". 
+    
+    Returns:
+        tuple: Кортеж, содержащий индекс перекреста, наклон низкочастотного режима масштабирования и 
+            наклон высокочастотного режима масштабирования
 
     """
     
@@ -128,7 +149,15 @@ def analyze_hs(hs, S, output_file, plot=True, title="H(S)"):
         plt.plot()
     return cross, res_l.slope, res_h.slope
 
-def make_animation(vs_np, us_np, output):
+def make_animation(vs_np: np.array, us_np: np.array, output: str):
+    """
+    Создает анимацию оптического потока и векторного поля.
+
+    Args:
+        vs_np (np.array): Массив вертикальных компонент оптического потока.
+        us_np (np.array): Массив горизонтальных компонент оптического потока.
+        output (str): Путь к файлу для сохранения анимации.
+    """
     nl, nc = vs_np.shape[1:]
     nvec = 25  # Number of vectors to be displayed along each image dimension
     step = max(nl//nvec, nc//nvec)
@@ -165,12 +194,15 @@ def make_animation(vs_np, us_np, output):
 
 def compute_temporal_scales(base: float, smin: float, smax: float) -> list[int]:
     """
-    Функция вычисляет временные масштабы для анализа многомерных временных рядов с использованием алгоритма DCCA.
+    Вычисляет временные масштабы для анализа многомерных временных рядов.
 
-    :param base: float, база логарифма.
-    :param smin: int, минимальный размер временного масштаба.
-    :param smax: int, максимальный размер временного масштаба.
-    :return: список временных масштабов.
+    Args:
+        base (float): База логарифма.
+        smin (float): Минимальный размер временного масштаба.
+        smax (float): Максимальный размер временного масштаба.
+
+    Returns:
+        list[int]: Список временных масштабов.
     """
 
     temporal_scales = []

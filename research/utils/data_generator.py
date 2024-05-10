@@ -6,35 +6,53 @@ import slideio
 import numpy as np
 
 
-def bacterial_ds_generator(input_dir, cache_dir, output_dir):
+def bacterial_ds_generator(input_dir: str, 
+                           cache_dir: str, 
+                           output_dir: str, 
+                           cache_suffix: str = ""):
     """
     Генератор для создания путей к видеофайлам, файлам кэша и анимациям.
 
-    :param input_dir: str, путь к папке с видеофайлами.
-    :param cache_dir: str, путь к папке, где будут храниться файлы кэша.
-    :param output_dir: str, путь к папке, где будут храниться файлы анимаций.
-    :return: tuple, кортеж из двух строк, представляющих путь к видеофайлу и путь к файлу кэша.
+    Args:
+        input_dir (str): Путь к папке с видеофайлами.
+        cache_dir (str): Путь к папке, где будут храниться файлы кэша.
+        output_dir (str): Путь к папке, где будут храниться файлы анимаций.
+        cache_suffix (str, optional): Суффикс для файлов кэша. Defaults to "".
+
+    Returns:
+        tuple: Кортеж из двух строк, представляющих путь к видеофайлу и путь к файлу кэша.
     """
 
     videos = glob(os.path.join(input_dir, f"*.avi"))
     for input_file in videos:
         path_file, _ = os.path.splitext(input_file)
         file_name = os.path.basename(path_file) 
-        cache_file = os.path.join(cache_dir, file_name+".npz")
-        output_file = os.path.join(output_dir, file_name+".mp4")
-        fluctuation_file = os.path.join(output_dir, file_name+".csv")
-        yield input_file, cache_file, output_file, fluctuation_file
+        cache_file = os.path.join(cache_dir, file_name + cache_suffix + ".npz")
+        
+        if cache_suffix == "":
+            output_file = os.path.join(output_dir, file_name + ".mp4")
+            fluctuation_file = os.path.join(output_dir, file_name + ".csv")
+            yield input_file, cache_file, output_file, fluctuation_file
+        else:
+            yield input_file, cache_file
 
-def zvi_based_frame_generator(video_path, start_frame=0, step=1, blur_sigma=None, frame_count=np.iinfo(int).max):
+def zvi_based_frame_generator(video_path: str, 
+                              start_frame: int = 0, 
+                              step: int = 1, 
+                              blur_sigma: float = None, 
+                              frame_count: int = np.iinfo(int).max):
     """
-    Функция генерирует кадры изображений из файла формата ZVI.
+    Генерирует кадры изображений из файла формата ZVI.
 
-    :param video_path: str, путь к файлу ZVI.
-    :param start_frame: int, опциональный параметр, номер первого кадра для чтения.
-    :param step: int, опциональный параметр, шаг между кадрами для чтения.
-    :param blur_sigma: float, опциональный параметр, стандартное отклонение для размытия изображения (если требуется).
-    :param frame_count: int, опциональный параметр, максимальное количество кадров для чтения.
-    :return: generator, генератор кадров изображений из файла ZVI.
+    Args:
+        video_path (str): Путь к файлу ZVI.
+        start_frame (int, optional): Номер первого кадра для чтения. Defaults to 0.
+        step (int, optional): Шаг между кадрами для чтения. Defaults to 1.
+        blur_sigma (float, optional): Стандартное отклонение для размытия изображения (если требуется). Defaults to None.
+        frame_count (int, optional): Максимальное количество кадров для чтения. Defaults to максимальное значение для int.
+
+    Yields:
+        generator: Генератор кадров изображений из файла ZVI.
     """
 
     slide = slideio.open_slide(video_path,"ZVI")
@@ -44,18 +62,24 @@ def zvi_based_frame_generator(video_path, start_frame=0, step=1, blur_sigma=None
         yield scene.read_block(rect=(0,0,0,0), size=(0,0), channel_indices=[0], slices=(0,1), frames=(i,i+1))
 
 
-def video_based_frame_generator(video_path, start_frame=0, step=1, blur_sigma=None, frame_count=np.iinfo(int).max):
+def video_based_frame_generator(video_path: str, 
+                                start_frame: int = 0, 
+                                step: int = 1, 
+                                blur_sigma: float = None, 
+                                frame_count: int = np.iinfo(int).max):
     """
-    Функция генерирует кадры видео из файлового источника.
+    Генерирует кадры видео из файлового источника.
 
-    :param video_path: str, путь к видеофайлу.
-    :param start_frame: int, опциональный параметр, номер первого кадра для чтения.
-    :param step: int, опциональный параметр, шаг между кадрами для чтения.
-    :param blur_sigma: float, опциональный параметр, стандартное отклонение для размытия изображения (если требуется).
-    :param frame_count: int, опциональный параметр, максимальное количество кадров для чтения.
-    :return: generator, генератор кадров из видео.
+    Args:
+        video_path (str): Путь к видеофайлу.
+        start_frame (int, optional): Номер первого кадра для чтения. Defaults to 0.
+        step (int, optional): Шаг между кадрами для чтения. Defaults to 1.
+        blur_sigma (float, optional): Стандартное отклонение для размытия изображения (если требуется). Defaults to None.
+        frame_count (int, optional): Максимальное количество кадров для чтения. Defaults to максимальное значение для int.
+
+    Yields:
+        generator: Генератор кадров из видео.
     """
-
     cap = cv2.VideoCapture(video_path) 
     if not cap.isOpened():
         print("Cannot open camera")
@@ -79,16 +103,23 @@ def video_based_frame_generator(video_path, start_frame=0, step=1, blur_sigma=No
         yield grey_np
     cap.release()
 
-def frame_generator(video_path:str, start_frame=0, step=1, blur_sigma=None, frame_count=np.iinfo(int).max):
+def frame_generator(video_path: str, 
+                    start_frame: int = 0, 
+                    step: int = 1, 
+                    blur_sigma: float = None, 
+                    frame_count: int = np.iinfo(int).max):
     """
-    Функция определяет тип видеофайла и вызывает соответствующий генератор кадров.
+    Определяет тип видеофайла и вызывает соответствующий генератор кадров.
 
-    :param video_path: str, путь к видеофайлу.
-    :param start_frame: int, опциональный параметр, номер первого кадра для чтения.
-    :param step: int, опциональный параметр, шаг между кадрами для чтения.
-    :param blur_sigma: float, опциональный параметр, стандартное отклонение для размытия изображения (если требуется).
-    :param frame_count: int, опциональный параметр, максимальное количество кадров для чтения.
-    :return: generator, генератор кадров из видео.
+    Args:
+        video_path (str): Путь к видеофайлу.
+        start_frame (int, optional): Номер первого кадра для чтения. Defaults to 0.
+        step (int, optional): Шаг между кадрами для чтения. Defaults to 1.
+        blur_sigma (float, optional): Стандартное отклонение для размытия изображения (если требуется). Defaults to None.
+        frame_count (int, optional): Максимальное количество кадров для чтения. Defaults to максимальное значение для int.
+
+    Returns:
+        generator: Генератор кадров из видео.
     """
     if video_path.endswith("zvi"):
         return zvi_based_frame_generator(video_path, start_frame, step, blur_sigma, frame_count)
