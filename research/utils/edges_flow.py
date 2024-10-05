@@ -165,8 +165,6 @@ def compute_edges_flow(generator, win_size: int, win_step: int = 10) -> np.array
         np.array: Массив, содержащий плотность границ для каждого кадра видео.
 
     """
-    import pdb
-    # pdb.set_trace()
 
     edges = []
     image0 = None
