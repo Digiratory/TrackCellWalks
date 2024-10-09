@@ -2,9 +2,6 @@ import numpy as np
 import cv2
 from cv2 import calcOpticalFlowFarneback
 from skimage.registration import optical_flow_tvl1 
-import sys
-
-sys.path.append('..')
 
 class ComputeOpticalFlow:
     def __init__(self, generator, cache_path):
@@ -74,6 +71,56 @@ class ComputeOpticalFlow:
 
         return self.__vertical_components, self.__horizontal_components
     
-if __name__ == '__main__':
-    # TO-DO using algo
-    pass
+    def compute_pixel_offset(self): 
+        vertical_magnitude = self.compute_vertical_magnitude()
+        horizontal_mangnitude = self.compute_horizontal_magnitude()
+
+        pixel_offset = np.sqrt(vertical_magnitude ** 2 + horizontal_mangnitude ** 2)
+
+        return pixel_offset
+    
+    def compute_vertical_magnitude(self):
+        vertical_magnitude = self._compute_mean_components(self.__vertical_components)
+        return vertical_magnitude
+    
+    def _compute_mean_components(self, components):
+        components_quantiled = np.quantile(components, self.__thresh)
+        mean = components.mean(
+            axis=0, 
+            where=components > components_quantiled
+        )
+        return mean
+    
+    def compute_horizontal_magnitude(self):
+        horizontal_magnitude = self._compute_mean_components(self.__horizontal_components)
+        return horizontal_magnitude
+    
+    def select_vertical_magnitude(self):
+        step = self.compute_step_between_vectors()
+        vertical_mangintude = self.compute_vertical_magnitude()
+        selected_vertical_magnitude = vertical_mangintude[::step, ::step]
+        return selected_vertical_magnitude
+
+    def compute_step_between_vectors(self):
+        height = self.get_image_height()
+        width = self.get_image_width()
+        step = max(height // self.__num_displayed_vectors, width // self.__num_displayed_vectors)
+        return step
+    
+    def get_image_height(self):
+        height = self.__horizontal_components.shape[1]
+        return height
+    
+    def get_image_width(self):
+        width = self.__horizontal_components.shape[2]
+        return width
+
+    def select_horizontal_magnitude(self):
+        step = self.compute_step_between_vectors()
+        horiznotal_magnitude = self.compute_horizontal_magnitude()
+        selected_horizontal_magnitude = horiznotal_magnitude[::step, ::step]
+        return selected_horizontal_magnitude
+
+    def compute_vector_field(self):
+        return self.__vertical_components + 1j * self.__horizontal_components
+        
