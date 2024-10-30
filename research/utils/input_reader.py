@@ -8,15 +8,24 @@ class InputReader:
         self.__file_content = self._read_file_content()
 
         self.__validator = InputValidator(self.__file_content)
+        
 
     def _read_file_content(self):
         with open(self.file_path) as f:
             params = json.load(f)
         return params
+    
+    def get_video_file_path(self):
+        self.__validator.validate_video_file()
+        return self.__file_content['input']
 
-    def get_input_path(self):
-        path_input = self.__file_content['input']
-        return path_input
+    def get_folder_videos_path(self):
+        self.__validator.validate_folder_videos()
+        return self.__file_content['input']
+
+    def get_folder_images_path(self):
+        self.__validator.validate_folder_images()
+        return self.__file_content['input']
 
     def get_record_duration(self) -> int:
         return self.__file_content['record_duration']
@@ -34,55 +43,17 @@ class InputReader:
         return cache_path
 
     def _getInputPathName(self):
-        input_path = self.get_input_path()
+        input_path = self.__file_content['input']
         name_with_ext = os.path.basename(input_path)
         name, _ = os.path.splitext(name_with_ext)
         return name
-
+    
     def get_result_path(self):
         input_path_name = self._getInputPathName()
         ext = '.mp4'
         cache_path = 'data/results/' + input_path_name + ext
         return cache_path
-    
-    def get_video_file_path(self):
-        self.__validator.validate_video_file()
-        return self.__file_content['input']
 
-    def get_folder_videos_path(self):
-        self.__validator.validate_folder_videos()
-        return self.__file_content['input']
-
-    def get_folder_images_path(self):
-        self.__validator.validate_folder_images()
-        return self.__file_content['input']
-
-    def _isInputVideoFile(self) -> bool:
-        input_path = self.get_input_path()
-        if (os.path.isfile(input_path)):
-            _, ext = os.path.splitext(input_path)
-            if ext in ['.mp4', '.avi']:
-                return True
-        return False
-    
-    def _isInputFolderWithImages(self) -> bool:
-        input_path = self.get_input_path()
-        if (os.path.isdir(input_path)):
-            files = os.listdir(input_path)
-            _, ext = os.path.splitext(files[0])
-            if ext in []: # TODO добавить разрешения изображений
-                return True
-        return False
-
-    def _isInputFolderWithVideos(self) -> bool:
-        input_path = self.get_input_path()
-        if (os.path.isdir(input_path)):
-            files = os.listdir(input_path)
-            _, ext = os.path.splitext(files[0])
-            if ext in ['.mp4', '.avi']:
-                return True
-        return False
-    
 class InputValidator:
     def __init__(self, file_content:dict):
         self.__file_content = file_content
