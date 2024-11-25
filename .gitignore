@@ -1,6 +1,8 @@
 # my ignore
 data/
 .python-version
+.vscode/
+
 
 
 # Byte-compiled / optimized / DLL files

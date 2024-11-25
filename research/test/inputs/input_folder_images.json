@@ -1,0 +1,6 @@
+{
+    "input": "data/test/test_folder_images",
+    "record_duration": 100,
+    "base": 1.1,
+    "smin": 8
+}
